@@ -1,7 +1,16 @@
-import { VElem } from "./types";
+import { VElem, noreactRoot } from "./types.js";
 
 export const noreact = {
-  h(type, props, ...childs): VElem {
-    return { type, props, childs };
+  h(type, props, ...children): VElem {
+    return { type, props, children };
+  },
+  fragment(props, ...children): VElem {
+    return noreact.h("", props, ...children);
   },
 };
+
+export function createRoot() {
+  return new noreactRoot();
+}
+
+export type noreactRootType = noreactRoot;
