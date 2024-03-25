@@ -22,7 +22,7 @@ export class noreactRoot {
     return hook;
   }
   private render(
-    velem: VElem | string,
+    velem: VElem | string | number | boolean,
     container?: HTMLElement,
     returnEl: Boolean = false
   ) {
@@ -38,6 +38,9 @@ export class noreactRoot {
       return;
     }
 
+    // We Sure velem is An VElem
+    velem = velem as VElem;
+
     if (typeof velem.type == "function") {
       let call = velem.type.call(this, velem.props, ...velem.children);
       return this.render(call, container);
@@ -51,7 +54,7 @@ export class noreactRoot {
     let elProps = velem.props ? Object.keys(velem.props) : null;
     if (elProps && elProps.length > 0 && velem.type) {
       elProps.forEach((prop) => {
-        let propVal = velem.props[prop];
+        let propVal = (velem as VElem).props[prop];
         if (prop.startsWith("on")) {
           if (typeof propVal != "function") {
             throw "invalid EventListener";
