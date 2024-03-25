@@ -1,0 +1,17 @@
+{
+  "name": "noreact",
+  "version": "1.0.0",
+  "description": "Simple React-like Library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "React"
+  ],
+  "author": "Parsa Mostafaie",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.3"
+  }
+}
