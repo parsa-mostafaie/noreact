@@ -4,7 +4,8 @@
   "description": "Simple React-like Library",
   "main": "index.js",
   "scripts": {
-    "dev": "tsc --outdir ./dist/ -w"
+    "dev": "tsc src/__test__.ts src/noreact/index.js --outdir ./dist/ -w",
+    "dev-es": "npm run dev -- --module ES6 --esModuleInterop true --target ES6 --moduleResolution Node"
   },
   "keywords": [
     "React"
