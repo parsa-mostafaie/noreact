@@ -3,6 +3,12 @@ import { VElem, hookNameType, HookType, instanceOfVElem } from "./types.js";
 export class noreactRoot {
   container: HTMLElement;
   root: VElem;
+
+  private hooks: HookType[] = [];
+  private hookIndex: number = 0;
+  private waiting: any = { current: false };
+
+  private current_rendering: VElem = null;
   private HOOK(value, hname: hookNameType) {
     let hook = this.hooks[this.hookIndex++];
     if (!hook) {
@@ -29,59 +35,70 @@ export class noreactRoot {
 
     // We Sure velem is An VElem
     velem = velem as VElem;
+    let prevEl: VElem = this.current_rendering;
+    this.current_rendering = velem;
 
     if (typeof velem.type == "function") {
       let call = velem.type.call(this, velem.props, ...velem.children);
-      return this.render(call, container);
-    }
+      this.render(call, container);
+    } else {
+      // 1. First create the document node corresponding el
+      domEl = velem.type
+        ? document.createElement(velem.type)
+        : document.createDocumentFragment();
+      // 2. Set the props on domEl
+      let elProps = velem.props ? Object.keys(velem.props) : null;
+      if (elProps && elProps.length > 0 && velem.type) {
+        elProps.forEach((prop) => {
+          let propVal = (velem as VElem).props[prop];
+          if (prop.startsWith("on")) {
+            if (typeof propVal != "function") {
+              throw "invalid EventListener";
+            }
+            domEl.addEventListener(prop.slice(2).toLowerCase(), async (e) => {
+              this.waiting.current = true;
+              await propVal.call(this, e);
+              this.waiting.current = false;
+            });
+          } else if (prop == "className") {
+            domEl.classList.add(
+              ...(Array.isArray(propVal) ? propVal : propVal.split(" "))
+            );
+          } else if (prop == "css") {
+            let cssS = propVal;
 
-    // 1. First create the document node corresponding el
-    domEl = velem.type
-      ? document.createElement(velem.type)
-      : document.createDocumentFragment();
-    // 2. Set the props on domEl
-    let elProps = velem.props ? Object.keys(velem.props) : null;
-    if (elProps && elProps.length > 0 && velem.type) {
-      elProps.forEach((prop) => {
-        let propVal = (velem as VElem).props[prop];
-        if (prop.startsWith("on")) {
-          if (typeof propVal != "function") {
-            throw "invalid EventListener";
-          }
-          domEl.addEventListener(prop.slice(2).toLowerCase(), async (e) => {
-            this.waiting.current = true;
-            await propVal.call(this, e);
-            this.waiting.current = false;
-          });
-        } else if (prop == "className") {
-          domEl.classList.add(
-            ...(Array.isArray(propVal) ? propVal : propVal.split(" "))
-          );
-        } else if (prop == "css") {
-          let cssS = propVal;
-
-          if (typeof cssS == "string") {
-            domEl.style.cssText = cssS;
-          } else if (typeof cssS == "object") {
-            for (let cssProp in cssS) {
-              domEl.style[cssProp] = cssS[cssProp];
+            if (typeof cssS == "string") {
+              domEl.style.cssText = cssS;
+            } else if (typeof cssS == "object") {
+              for (let cssProp in cssS) {
+                domEl.style[cssProp] = cssS[cssProp];
+              }
+            } else {
+              throw "Invalid 'css' prop";
             }
           } else {
-            throw "Invalid 'css' prop";
+            domEl.setAttribute(prop, propVal);
           }
-        } else {
-          domEl.setAttribute(prop, propVal);
-        }
+        });
+      }
+      // 3. Handle creating the Children.
+      if (velem.children && velem.children.length > 0) {
+        // When child is rendered, the container will be
+        // the domEl we created here.
+        velem.children.forEach((node) => this.render(node, domEl));
+      } // 4. append the DOM node to the container.
+      container.appendChild(domEl);
+    }
+
+    Object.values(this.hooks)
+      .filter((hook) => hook.hookName == "effect") // filter effects
+      .filter((hook) => hook.for == velem) // filter for current
+      .filter((hook) => hook.cb) // changeds
+      .forEach((h) => {
+        h.cleanup = h.cb();
+        h.cb = null;
       });
-    }
-    // 3. Handle creating the Children.
-    if (velem.children && velem.children.length > 0) {
-      // When child is rendered, the container will be
-      // the domEl we created here.
-      velem.children.forEach((node) => this.render(node, domEl));
-    }
-    // 4. append the DOM node to the container.
-    container.appendChild(domEl);
+    this.current_rendering = prevEl;
   }
   private rerender() {
     if (this.waiting.current) {
@@ -111,9 +128,6 @@ export class noreactRoot {
     this.rerender();
     return this;
   }
-  private hooks: HookType[] = [];
-  private hookIndex: number = 0;
-  private waiting: any = { current: false };
   useReducer(reducer, initialState: any): [any, Function] {
     const hook: HookType = this.HOOK(initialState, "reducer");
     const dispatch = (action) => {
@@ -129,5 +143,16 @@ export class noreactRoot {
   useRef(initialValue) {
     const [ref, unused] = this.useState({ current: initialValue });
     return ref;
+  }
+  useEffect(cb: Function, deps: any[]) {
+    // Returns true if two arrays `a` and `b` are different.
+    const changed = (a, b) => !a || b.some((arg, i) => arg !== a[i]);
+
+    const hook = this.HOOK(deps, "effect");
+    hook.for = this.current_rendering;
+    if (changed(hook.value, deps) || hook.value == deps) {
+      hook.value = deps;
+      hook.cb = cb;
+    }
   }
 }
