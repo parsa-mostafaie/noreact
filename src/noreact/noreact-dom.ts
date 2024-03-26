@@ -1,4 +1,4 @@
-import { VElem, hookNameType, HookType, instanceOfVElem } from './types.js'
+import { VElem, hookNameType, HookType, instanceOfVElem } from "./types.js";
 
 export class noreactRoot {
   container: HTMLElement;
@@ -48,9 +48,11 @@ export class noreactRoot {
           if (typeof propVal != "function") {
             throw "invalid EventListener";
           }
-          domEl.addEventListener(prop.slice(2).toLowerCase(), (e) =>
-            propVal.call(this, e)
-          );
+          domEl.addEventListener(prop.slice(2).toLowerCase(), async (e) => {
+            this.waiting.current = true;
+            await propVal.call(this, e);
+            this.waiting.current = false;
+          });
         } else if (prop == "className") {
           domEl.classList.add(
             ...(Array.isArray(propVal) ? propVal : propVal.split(" "))
@@ -82,9 +84,26 @@ export class noreactRoot {
     container.appendChild(domEl);
   }
   private rerender() {
+    if (this.waiting.current) {
+      let rr = this.rerender;
+      let th = this;
+      if (this.waiting.proxy) return;
+      this.waiting = new Proxy(this.waiting, {
+        set(target, p, newValue, receiver) {
+          target[p] = newValue;
+          if (p == "current" && newValue == false) {
+            this.waiting = { current: false };
+            rr.call(th);
+          }
+          return true;
+        },
+      });
+      this.waiting.proxy = true;
+      return;
+    }
     this.container.innerHTML = "";
-    this.render(this.root);
     this.hookIndex = 0;
+    this.render(this.root);
   }
   mount(root, container): noreactRoot {
     this.container = container;
@@ -94,6 +113,7 @@ export class noreactRoot {
   }
   private hooks: HookType[] = [];
   private hookIndex: number = 0;
+  private waiting: any = { current: false };
   useReducer(reducer, initialState: any): [any, Function] {
     const hook: HookType = this.HOOK(initialState, "reducer");
     const dispatch = (action) => {
@@ -105,5 +125,9 @@ export class noreactRoot {
   useState(initialState): [any, Function] {
     const gv = (_, v) => (typeof v == "function" ? v(_) : v);
     return this.useReducer(gv, initialState);
+  }
+  useRef(initialValue) {
+    const [ref, unused] = this.useState({ current: initialValue });
+    return ref;
   }
 }
