@@ -146,13 +146,15 @@ export class noreactRoot {
   }
   useEffect(cb: Function, deps: any[]) {
     // Returns true if two arrays `a` and `b` are different.
-    const changed = (a, b) => !a || b.some((arg, i) => arg !== a[i]);
+    const changed = (a, b) => a == b || b.some((arg, i) => arg !== a[i]);
 
     const hook = this.HOOK(deps, "effect");
     hook.for = this.current_rendering;
-    if (changed(hook.value, deps) || hook.value == deps) {
+    if (changed(hook.value, deps)) {
       hook.value = deps;
       hook.cb = cb;
+    } else {
+      hook.cb = null;
     }
   }
 }
