@@ -10,6 +10,10 @@ export interface HookType {
   hookName: hookNameType;
 }
 
+function instanceOfVElem(object: any): object is VElem {
+  return object.type || object.type === "";
+}
+
 export class noreactRoot {
   container: HTMLElement;
   root: VElem;
@@ -22,17 +26,17 @@ export class noreactRoot {
     return hook;
   }
   private render(
-    velem: VElem | string | number | boolean,
+    velem: VElem | any,
     container?: HTMLElement,
     returnEl: Boolean = false
   ) {
     let domEl;
     container = container || this.container;
     // 0. Check the type of el
-    //    if string we need to handle it like text node.
-    if (['string', 'number', 'boolean'].includes(typeof velem)) {
+    //    if not a VElem we need to handle it like text node.
+    if (!instanceOfVElem(velem)) {
       // create an actual Text Node
-      domEl = document.createTextNode(velem + "");
+      domEl = document.createTextNode(velem.toString());
       container.appendChild(domEl);
       // No children for text so we return.
       return;
