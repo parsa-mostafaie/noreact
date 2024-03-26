@@ -27,8 +27,7 @@ export class noreactRoot {
   }
   private render(
     velem: VElem | any,
-    container?: HTMLElement | DocumentFragment,
-    returnEl: Boolean = false
+    container?: HTMLElement | DocumentFragment
   ) {
     let domEl: any;
     container = container || this.container;
@@ -94,8 +93,7 @@ export class noreactRoot {
       velem.children.forEach((node) => this.render(node, domEl));
     }
     // 4. append the DOM node to the container.
-    if (!returnEl) container.appendChild(domEl);
-    else return domEl;
+    container.appendChild(domEl);
   }
   private rerender() {
     this.container.innerHTML = "";
