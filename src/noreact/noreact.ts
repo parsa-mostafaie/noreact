@@ -1,4 +1,5 @@
-import { VElem, noreactRoot } from "./types.js";
+import { VElem } from "./types.js";
+import { noreactRoot } from "./noreact-dom.js";
 
 export const noreact = {
   h(type, props, ...children): VElem {
