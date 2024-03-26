@@ -1,7 +1,7 @@
 export interface VElem {
   type: string | Function;
   props: any[];
-  children: any[];
+  children: VElem[] | any[];
 }
 
 export type hookNameType = "effect" | "reducer";
@@ -27,10 +27,10 @@ export class noreactRoot {
   }
   private render(
     velem: VElem | any,
-    container?: HTMLElement,
+    container?: HTMLElement | DocumentFragment,
     returnEl: Boolean = false
   ) {
-    let domEl;
+    let domEl: any;
     container = container || this.container;
     // 0. Check the type of el
     //    if not a VElem we need to handle it like text node.
@@ -102,23 +102,23 @@ export class noreactRoot {
     this.render(this.root);
     this.hookIndex = 0;
   }
-  mount(root, container) {
+  mount(root, container): noreactRoot {
     this.container = container;
     this.root = root;
     this.rerender();
     return this;
   }
   private hooks: HookType[] = [];
-  private hookIndex = 0;
-  useReducer(reducer, initialState: any) {
-    const hook = this.HOOK(initialState, "reducer");
+  private hookIndex: number = 0;
+  useReducer(reducer, initialState: any): [any, Function] {
+    const hook: HookType = this.HOOK(initialState, "reducer");
     const dispatch = (action) => {
       hook.value = reducer(hook.value, action);
       this.rerender();
     };
     return [hook.value, dispatch];
   }
-  useState(initialState) {
+  useState(initialState): [any, Function] {
     const gv = (_, v) => (typeof v == "function" ? v(_) : v);
     return this.useReducer(gv, initialState);
   }
