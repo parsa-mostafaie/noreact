@@ -13,4 +13,3 @@ export function createRoot() {
   return new noreactRoot();
 }
 
-export type noreactRootType = noreactRoot;
