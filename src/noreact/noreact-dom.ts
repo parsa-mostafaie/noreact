@@ -1,7 +1,7 @@
 import { VElem, hookNameType, HookType, instanceOfVElem } from "./types.js";
 import { __noreact__dom__currents__ as currents } from "./noreact-currents.js";
 
-export class noreactRoot{
+export class noreactRoot {
   container: HTMLElement;
   root: VElem;
 
@@ -35,13 +35,16 @@ export class noreactRoot{
     // 0. Check the type of el
     //    if not a VElem we need to handle it like text node.
     if (!instanceOfVElem(velem)) {
+      if (velem instanceof Array) {
+        velem.map((item) => this.render(item, container));
+        return;
+      }
       // create an actual Text Node
       domEl = document.createTextNode(velem.toString());
       container.appendChild(domEl);
       // No children for text so we return.
       return;
     }
-
     // We Sure velem is An VElem
     velem = velem as VElem;
     let prevEl: VElem = this.current_rendering;
