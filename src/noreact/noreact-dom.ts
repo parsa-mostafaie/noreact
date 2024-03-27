@@ -17,6 +17,14 @@ export class noreactRoot {
     }
     return hook;
   }
+  private wait(callback: Function, thisArg) {
+    return (...args) => {
+      this.waiting.current = true;
+      let res = callback.call(thisArg, ...args);
+      this.waiting.current = false;
+      return res;
+    };
+  }
   private render(
     velem: VElem | any,
     container?: HTMLElement | DocumentFragment
@@ -55,11 +63,10 @@ export class noreactRoot {
             if (typeof propVal != "function") {
               throw "invalid EventListener";
             }
-            domEl.addEventListener(prop.slice(2).toLowerCase(), async (e) => {
-              this.waiting.current = true;
-              await propVal.call(this, e);
-              this.waiting.current = false;
-            });
+            domEl.addEventListener(
+              prop.slice(2).toLowerCase(),
+              this.wait(propVal, this)
+            );
           } else if (prop == "className") {
             domEl.classList.add(
               ...(Array.isArray(propVal) ? propVal : propVal.split(" "))
@@ -95,32 +102,34 @@ export class noreactRoot {
       .filter((hook) => hook.for == velem) // filter for current
       .filter((hook) => hook.cb) // changeds
       .forEach((h) => {
-        h.cleanup = h.cb();
+        h.cleanup = h.cb.call(this);
         h.cb = null;
       });
     this.current_rendering = prevEl;
   }
   private rerender() {
     if (this.waiting.current) {
+      if (this.waiting.proxy) return;
       let rr = this.rerender;
       let th = this;
-      if (this.waiting.proxy) return;
-      this.waiting = new Proxy(this.waiting, {
+      let prox = new Proxy(this.waiting, {
         set(target, p, newValue, receiver) {
           target[p] = newValue;
-          if (p == "current" && newValue == false) {
-            this.waiting = { current: false };
+          if (th.waiting.current == false) {
+            th.waiting = { current: false };
+            th.waiting.proxy = false;
             rr.call(th);
           }
           return true;
         },
       });
+      this.waiting = prox;
       this.waiting.proxy = true;
       return;
     }
     this.container.innerHTML = "";
     this.hookIndex = 0;
-    this.render(this.root);
+    this.wait(this.render, this)(this.root);
   }
   mount(root, container): noreactRoot {
     this.container = container;
