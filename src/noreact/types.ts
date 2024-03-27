@@ -1,8 +1,4 @@
-export interface VElem {
-  type: string | Function;
-  props: any[];
-  children: VElem[] | any[];
-}
+import { VElem, instanceOfVElem, Props } from "./dom-def.js";
 
 export type hookNameType = "effect" | "reducer";
 export interface HookType {
@@ -12,8 +8,4 @@ export interface HookType {
   cleanup?: Function;
   for?: VElem
 }
-
-export function instanceOfVElem(object: any): object is VElem {
-  return object.type || object.type === "";
-}
-
+export { VElem, instanceOfVElem };

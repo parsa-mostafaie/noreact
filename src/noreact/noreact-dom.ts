@@ -1,6 +1,7 @@
 import { VElem, hookNameType, HookType, instanceOfVElem } from "./types.js";
+import { __noreact__dom__currents__ as currents } from "./noreact-currents.js";
 
-export class noreactRoot {
+export class noreactRoot{
   container: HTMLElement;
   root: VElem;
 
@@ -9,7 +10,7 @@ export class noreactRoot {
   private waiting: any = { current: false };
 
   private current_rendering: VElem = null;
-  private HOOK(value, hname: hookNameType) {
+  private HOOK<T>(value: T, hname: hookNameType): HookType {
     let hook = this.hooks[this.hookIndex++];
     if (!hook) {
       hook = { value, hookName: hname };
@@ -28,7 +29,7 @@ export class noreactRoot {
   private render(
     velem: VElem | any,
     container?: HTMLElement | DocumentFragment
-  ) {
+  ): void {
     let domEl: any;
     container = container || this.container;
     // 0. Check the type of el
@@ -127,9 +128,11 @@ export class noreactRoot {
       this.waiting.proxy = true;
       return;
     }
+    currents.__current__root__ = this;
     this.container.innerHTML = "";
     this.hookIndex = 0;
     this.wait(this.render, this)(this.root);
+    currents.__current__root__ = null;
   }
   mount(root, container): noreactRoot {
     this.container = container;
@@ -137,7 +140,7 @@ export class noreactRoot {
     this.rerender();
     return this;
   }
-  useReducer(reducer, initialState: any): [any, Function] {
+  useReducer<T>(reducer, initialState: T): [T, (action: any) => void] {
     const hook: HookType = this.HOOK(initialState, "reducer");
     const dispatch = (action) => {
       hook.value = reducer(hook.value, action);
@@ -145,15 +148,15 @@ export class noreactRoot {
     };
     return [hook.value, dispatch];
   }
-  useState(initialState): [any, Function] {
+  useState<T>(initialState: T): [T, (action: any) => void] {
     const gv = (_, v) => (typeof v == "function" ? v(_) : v);
     return this.useReducer(gv, initialState);
   }
-  useRef(initialValue) {
+  useRef<T>(initialValue: T): { current: T } {
     const [ref, unused] = this.useState({ current: initialValue });
     return ref;
   }
-  useEffect(cb: Function, deps: any[]) {
+  useEffect(cb: () => Function, deps: any[]) {
     // Returns true if two arrays `a` and `b` are different.
     const changed = (a, b) => a == b || b.some((arg, i) => arg !== a[i]);
 
