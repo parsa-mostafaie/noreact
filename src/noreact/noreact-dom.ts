@@ -13,8 +13,24 @@ export class noreactRoot {
   private HOOK<T>(value: T, hname: hookNameType): HookType {
     let hook = this.hooks[this.hookIndex++];
     if (!hook) {
-      hook = { value, hookName: hname };
+      hook = { value, hookName: hname, for: this.current_rendering };
       this.hooks.push(hook);
+    }
+    if (
+      (hook.for.props?.key ?? null) !=
+      (this.current_rendering.props?.key ?? null)
+    ) {
+      // skip this hook
+      hook = this.HOOK(value, hname);
+    }
+    if (hook.hookName != hname) {
+      throw (
+        "HookName: `" +
+        hname +
+        "` in this render is not equal to `" +
+        hook.hookName +
+        "` in prev render"
+      );
     }
     return hook;
   }
@@ -65,7 +81,7 @@ export class noreactRoot {
           let propVal = (velem as VElem).props[prop];
           if (prop.startsWith("on")) {
             if (typeof propVal != "function") {
-              throw "invalid EventListener";
+              throw "Invalid EventListener; EventListener Should Be A function";
             }
             domEl.addEventListener(
               prop.slice(2).toLowerCase(),
@@ -164,12 +180,15 @@ export class noreactRoot {
     const changed = (a, b) => a == b || b.some((arg, i) => arg !== a[i]);
 
     const hook = this.HOOK(deps, "effect");
-    hook.for = this.current_rendering;
     if (changed(hook.value, deps)) {
       hook.value = deps;
       hook.cb = cb;
     } else {
       hook.cb = null;
     }
+  }
+  useId(remember) {
+    const id = "id" + new Date().getTime();
+    return id;
   }
 }
