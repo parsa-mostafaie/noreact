@@ -51,7 +51,7 @@ export function remAttr(prop, propVal, domEl) {
     domEl.classList.remove(
       ...(Array.isArray(propVal) ? propVal : propVal.split(" "))
     );
-  } else if (prop == "css") {
+  } else if (prop == "style") {
     let cssS = propVal;
 
     if (typeof cssS == "string") {
