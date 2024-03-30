@@ -1,5 +1,6 @@
 import { VElem, hookNameType, HookType, instanceOfVElem } from "./types.js";
 import { __noreact__dom__currents__ as currents } from "./noreact-currents.js";
+import { setAttr } from "./dom-def.js";
 
 export class noreactRoot {
   container: HTMLElement;
@@ -42,24 +43,22 @@ export class noreactRoot {
       return res;
     };
   }
-  private render(
-    velem: VElem | any,
-    container?: HTMLElement | DocumentFragment
-  ): void {
+  private render(velem: VElem | any, old: VElem | any = undefined): void {
+    if (!velem) {
+      return this.render({ type: "" });
+    }
     let domEl: any;
-    container = container || this.container;
+
     // 0. Check the type of el
     //    if not a VElem we need to handle it like text node.
     if (!instanceOfVElem(velem)) {
       if (velem instanceof Array) {
-        velem.map((item) => this.render(item, container));
-        return;
+        return this.render({ type: "", children: velem });
       }
       // create an actual Text Node
       domEl = document.createTextNode(velem.toString());
-      container.appendChild(domEl);
       // No children for text so we return.
-      return;
+      return domEl;
     }
     // We Sure velem is An VElem
     velem = velem as VElem;
@@ -68,53 +67,26 @@ export class noreactRoot {
 
     if (typeof velem.type == "function") {
       let call = velem.type.call(this, velem.props, ...velem.children);
-      this.render(call, container);
-    } else {
-      // 1. First create the document node corresponding el
-      domEl = velem.type
-        ? document.createElement(velem.type)
-        : document.createDocumentFragment();
-      // 2. Set the props on domEl
-      let elProps = velem.props ? Object.keys(velem.props) : null;
-      if (elProps && elProps.length > 0 && velem.type) {
-        elProps.forEach((prop) => {
-          let propVal = (velem as VElem).props[prop];
-          if (prop.startsWith("on")) {
-            if (typeof propVal != "function") {
-              throw "Invalid EventListener; EventListener Should Be A function";
-            }
-            domEl.addEventListener(
-              prop.slice(2).toLowerCase(),
-              this.wait(propVal, this)
-            );
-          } else if (prop == "className") {
-            domEl.classList.add(
-              ...(Array.isArray(propVal) ? propVal : propVal.split(" "))
-            );
-          } else if (prop == "css") {
-            let cssS = propVal;
-
-            if (typeof cssS == "string") {
-              domEl.style.cssText = cssS;
-            } else if (typeof cssS == "object") {
-              for (let cssProp in cssS) {
-                domEl.style[cssProp] = cssS[cssProp];
-              }
-            } else {
-              throw "Invalid 'css' prop";
-            }
-          } else {
-            domEl.setAttribute(prop, propVal);
-          }
-        });
-      }
-      // 3. Handle creating the Children.
-      if (velem.children && velem.children.length > 0) {
-        // When child is rendered, the container will be
-        // the domEl we created here.
-        velem.children.forEach((node) => this.render(node, domEl));
-      } // 4. append the DOM node to the container.
-      container.appendChild(domEl);
+      return this.render(call);
+    }
+    // 1. First create the document node corresponding el
+    domEl = velem.type
+      ? document.createElement(velem.type)
+      : document.createDocumentFragment();
+    // 2. Set the props on domEl
+    let elProps = velem.props ? Object.keys(velem.props) : null;
+    if (elProps && elProps.length > 0 && velem.type) {
+      elProps.forEach((prop) => {
+        let propVal = (velem as VElem).props[prop];
+        setAttr.call(this, prop, propVal, domEl);
+      });
+    }
+    // 3. Handle creating the Children.
+    if (velem.children && velem.children.length > 0) {
+      // When child is rendered, the container will be
+      // the domEl we created here.
+      const c = velem.children.map((node) => this.render(node));
+      domEl.append(...c);
     }
 
     Object.values(this.hooks)
@@ -126,6 +98,7 @@ export class noreactRoot {
         h.cb = null;
       });
     this.current_rendering = prevEl;
+    return domEl;
   }
   private rerender() {
     if (this.waiting.current) {
@@ -150,7 +123,7 @@ export class noreactRoot {
     currents.__current__root__ = this;
     this.container.innerHTML = "";
     this.hookIndex = 0;
-    this.wait(this.render, this)(this.root);
+    this.container.appendChild(this.wait(this.render, this)(this.root));
     currents.__current__root__ = null;
   }
   mount(root, container): noreactRoot {
