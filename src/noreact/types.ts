@@ -6,6 +6,5 @@ export interface HookType {
   hookName: hookNameType;
   cb?: Function;
   cleanup?: Function;
-  for: VElem
 }
 export { VElem, instanceOfVElem };

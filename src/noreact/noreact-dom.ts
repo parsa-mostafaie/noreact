@@ -6,23 +6,42 @@ export class noreactRoot {
   container: HTMLElement;
   root: VElem;
 
-  private hooks: HookType[] = [];
-  private hookIndex: number = 0;
   private waiting: any = { current: false };
+  // HOOKS
+  private _hooks_: { arr: HookType[]; index: number; key: string | null }[] =
+    [];
+  private get hooks() {
+    return this.HOOKARR().arr;
+  }
+  private get hookIndex() {
+    return this.HOOKARR().index;
+  }
+
+  private set hookIndex(val) {
+    this.HOOKARR().index = val;
+  }
+
+  private resetHookIndex() {
+    for (let h of this._hooks_) {
+      h.index = 0;
+    }
+  }
+
+  private HOOKARR(): { index: number; arr: HookType[]; key: string | null } {
+    const key = (this.current_rendering.props ?? { key: null }).key;
+    function NEW() {
+      this._hooks_.push({ arr: [], key: key, index: 0 });
+      return this._hooks_[this._hooks_.length - 1];
+    }
+    return this._hooks_.find((h) => (h.key ?? null) === key) ?? NEW.call(this);
+  }
 
   private current_rendering: VElem = null;
   private HOOK<T>(value: T, hname: hookNameType): HookType {
     let hook = this.hooks[this.hookIndex++];
     if (!hook) {
-      hook = { value, hookName: hname, for: this.current_rendering };
+      hook = { value, hookName: hname };
       this.hooks.push(hook);
-    }
-    if (
-      (hook.for.props?.key ?? null) !=
-      (this.current_rendering.props?.key ?? null)
-    ) {
-      // skip this hook
-      hook = this.HOOK(value, hname);
     }
     if (hook.hookName != hname) {
       throw (
@@ -33,8 +52,11 @@ export class noreactRoot {
         "` in prev render"
       );
     }
+
     return hook;
   }
+  // END HOOK
+
   private wait(callback: Function, thisArg) {
     return (...args) => {
       this.waiting.current = true;
@@ -91,7 +113,6 @@ export class noreactRoot {
 
     Object.values(this.hooks)
       .filter((hook) => hook.hookName == "effect") // filter effects
-      .filter((hook) => hook.for == velem) // filter for current
       .filter((hook) => hook.cb) // changeds
       .forEach((h) => {
         h.cleanup = h.cb.call(this);
@@ -122,7 +143,7 @@ export class noreactRoot {
     }
     currents.__current__root__ = this;
     this.container.innerHTML = "";
-    this.hookIndex = 0;
+    this.resetHookIndex();
     this.container.appendChild(this.wait(this.render, this)(this.root));
     currents.__current__root__ = null;
   }
