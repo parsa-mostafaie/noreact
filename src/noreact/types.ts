@@ -1,4 +1,4 @@
-import { VElem, instanceOfVElem, Props } from "./dom-def.js";
+import { VElem, instanceOfVElem, Props } from "./dom-def";
 
 export type hookNameType = "effect" | "reducer";
 export interface HookType {

@@ -1,7 +1,7 @@
-import { VElem } from "./types.js";
-import { noreactRoot } from "./noreact-dom.js";
-import { Props } from "./dom-def.js";
-import * as hooks from "./hooks.js";
+import { VElem } from "./types";
+import { noreactRoot } from "./noreact-dom";
+import { Props } from "./dom-def";
+import * as hooks from "./hooks";
 
 export const noreact = {
   h(type, props: Props, ...children): VElem {

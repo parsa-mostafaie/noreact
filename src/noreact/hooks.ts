@@ -8,4 +8,4 @@ function cr() {
   return currents.__current__root__;
 }
 
-import { __noreact__dom__currents__ as currents } from "./noreact-currents.js";
+import { __noreact__dom__currents__ as currents } from "./noreact-currents";
