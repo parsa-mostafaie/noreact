@@ -2,6 +2,9 @@ import { VElem, hookNameType, HookType, instanceOfVElem } from "./types.js";
 import { __noreact__dom__currents__ as currents } from "./noreact-currents.js";
 import { setAttr } from "./dom-def.js";
 
+// Returns true if two arrays `a` and `b` are different.
+const changed = (a, b) => a == b || b.some((arg, i) => arg !== a[i]);
+
 export class noreactRoot {
   container: HTMLElement;
   root: VElem;
@@ -170,9 +173,6 @@ export class noreactRoot {
     return ref;
   }
   useEffect(cb: () => Function, deps: any[]) {
-    // Returns true if two arrays `a` and `b` are different.
-    const changed = (a, b) => a == b || b.some((arg, i) => arg !== a[i]);
-
     const hook = this.HOOK(deps, "effect");
     if (changed(hook.value, deps)) {
       hook.value = deps;
