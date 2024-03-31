@@ -1,4 +1,4 @@
-import { VElem, hookNameType, HookType, instanceOfVElem } from "./types";
+import { VElem, HookType, instanceOfVElem } from "./types";
 import { __noreact__dom__currents__ as currents } from "./noreact-currents";
 import { setAttr } from "./dom-def";
 
@@ -40,20 +40,11 @@ export class noreactRoot {
   }
 
   private current_rendering: VElem = null;
-  private HOOK<T>(value: T, hname: hookNameType): HookType {
+  private HOOK<T>(value: T): HookType {
     let hook = this.hooks[this.hookIndex++];
     if (!hook) {
-      hook = { value, hookName: hname };
+      hook = { value };
       this.hooks.push(hook);
-    }
-    if (hook.hookName != hname) {
-      throw (
-        "HookName: `" +
-        hname +
-        "` in this render is not equal to `" +
-        hook.hookName +
-        "` in prev render"
-      );
     }
 
     return hook;
@@ -115,11 +106,10 @@ export class noreactRoot {
     }
 
     Object.values(this.hooks)
-      .filter((hook) => hook.hookName == "effect") // filter effects
-      .filter((hook) => hook.cb) // changeds
+      .filter((hook) => hook.value.cb) // changeds
       .forEach((h) => {
-        h.cleanup = h.cb.call(this);
-        h.cb = null;
+        h.value.cleanup = h.value.cb.call(this);
+        h.value.cb = null;
       });
     this.current_rendering = prevEl;
     return domEl;
@@ -157,7 +147,7 @@ export class noreactRoot {
     return this;
   }
   useReducer<T>(reducer, initialState: T): [T, (action: any) => void] {
-    const hook: HookType = this.HOOK(initialState, "reducer");
+    const hook: HookType = this.HOOK(initialState);
     const dispatch = (action) => {
       hook.value = reducer(hook.value, action);
       this.rerender();
@@ -173,12 +163,12 @@ export class noreactRoot {
     return ref;
   }
   useEffect(cb: () => Function, deps: any[]) {
-    const hook = this.HOOK(deps, "effect");
+    const hook = this.HOOK({ deps });
     if (changed(hook.value, deps)) {
       hook.value = deps;
-      hook.cb = cb;
+      hook.value.cb = cb;
     } else {
-      hook.cb = null;
+      hook.value.cb = null;
     }
   }
   useId(remember) {
