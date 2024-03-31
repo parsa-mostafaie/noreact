@@ -1,12 +1,19 @@
 {
-  "name": "noreact",
-  "version": "1.0.0",
+  "name": "@noreact/noreact",
+  "version": "0.9.1",
   "description": "Simple React-like Library",
   "main": "index.js",
   "scripts": {
-    "dev": "tsc --outdir ./dist/ -w",
-    "dev-es": "npm run dev -- --module ES6 --esModuleInterop true --target ES6 --moduleResolution Node"
+    "dev": "npm run build -- -w",
+    "build": "tsc --outdir ./dist/",
+    "build-es": "npm run build -- --module ES6 --esModuleInterop true --target ES6 --moduleResolution Node",
+    "dev-es": "npm run build-es -- -w",
+    "postbuild": "copy package.json dist",
+    "npm": "npm run build && npm run postbuild && npm publish --access=public"
   },
+  "files": [
+    "dist/"
+  ],
   "keywords": [
     "React"
   ],
