@@ -1,4 +1,4 @@
-import { noreact, createRoot } from "../noreact/noreact";
+import { noreact, createRoot } from "../noreact";
 
 function App() {
   const [state, setState] = this.useState(0);

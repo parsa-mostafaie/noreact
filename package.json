@@ -1,11 +1,11 @@
 {
   "name": "@noreact/noreact",
-  "version": "0.9.3",
+  "version": "0.9.5",
   "description": "Simple React-like Library",
   "main": "index.js",
   "scripts": {
     "dev": "npm run build -- -w",
-    "build": "tsc --outdir ./dist/",
+    "build": "tsc",
     "postbuild": "copy package.json dist",
     "npm": "npm run build && npm run postbuild && npm publish --access=public"
   },
