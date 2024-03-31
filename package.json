@@ -1,16 +1,14 @@
 {
   "name": "@noreact/noreact",
-  "version": "0.9.6",
+  "version": "0.9.8",
   "description": "Simple React-like Library",
-  "main": "index.js",
+  "main": "noreact.js",
   "scripts": {
     "dev": "npm run build -- -w",
     "build": "tsc",
-    "npm": "npm run build && npm publish --access=public"
+    "test": "npx webpack",
+    "npm": "tsc && cd dist && copy ..\\package.json && copy ..\\LICENSE && copy ..\\README.md && npm publish --access=public"
   },
-  "files": [
-    "dist/"
-  ],
   "keywords": [
     "React"
   ],
